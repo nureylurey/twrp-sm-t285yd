@@ -1,1 +1,111 @@
+name: TWRP for SM-T285YD
+
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: "test = check inputs, sync source, check configuration (no compile). build = full recovery build."
+        required: true
+        default: test
+        type: choice
+        options: [test, build]
+
+permissions:
+  contents: read
+
+jobs:
+  twrp:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 300
+    env:
+      SRC: /home/runner/twrp
+      OUT: /home/runner/twrp/out/target/product/gtexsltedd
+    steps:
+      - name: Check out this repository
+        uses: actions/checkout@v4
+
+      - name: Verify stock kernel, board description and reference fstab hashes
+        run: sha256sum -c HASHES.sha256
+
+      - name: Self-test the partition-map checker (17 deliberate faults must be rejected)
+        run: python3 -I tools/test_check_fstab.py
+
+      - name: Validate TWRP partition map against stock (must pass)
+        run: |
+          python3 -I tools/check_fstab.py reference/stock-recovery.fstab \
+            reference/stock-boot-fstab.sc8830 reference/tablet-partitions.txt \
+            device/samsung/gtexsltedd/recovery.fstab
+
+      - name: Free disk space on the runner
+        run: |
+          df -h /
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache/CodeQL /usr/local/share/boost
+          sudo docker image prune -af
+          df -h /
+
+      - name: Install repo tool
+        run: |
+          mkdir -p ~/bin
+          curl -fsSL https://storage.googleapis.com/git-repo-downloads/repo -o ~/bin/repo
+          chmod +x ~/bin/repo
+
+      - name: Sync TWRP minimal source (twrp-5.1)
+        run: |
+          git config --global user.name "ci"
+          git config --global user.email "ci@localhost"
+          mkdir -p "$SRC" && cd "$SRC"
+          start=$(date +%s)
+          ~/bin/repo init --depth=1 -u https://github.com/minimal-manifest-twrp/platform_manifest_twrp_omni.git -b twrp-5.1
+          ~/bin/repo sync -c --no-tags --no-clone-bundle -j8
+          echo "sync took $(( $(date +%s) - start )) s"
+          du -sh "$SRC"; df -h /
+
+      - name: Add the SM-T285YD device tree
+        run: |
+          mkdir -p "$SRC/device/samsung"
+          cp -r device/samsung/gtexsltedd "$SRC/device/samsung/"
+
+      - name: Build the Ubuntu 14.04 / Java 7 build environment
+        run: docker build -t twrp51 .github/build-env
+
+      - name: Configuration check (lunch only, no compile)
+        run: |
+          docker run --rm -v "$SRC":/src -w /src twrp51 bash -c \
+            'source build/envsetup.sh && lunch omni_gtexsltedd-eng'
+
+      - name: Build recovery ramdisk
+        if: inputs.mode == 'build'
+        run: |
+          start=$(date +%s)
+          docker run --rm -v "$SRC":/src -w /src twrp51 bash -c \
+            'set -o pipefail; source build/envsetup.sh && lunch omni_gtexsltedd-eng && make -j$(nproc) recoveryimage 2>&1 | tee /src/build.log'
+          echo "build took $(( $(date +%s) - start )) s"
+          ls -l "$OUT"
+          test -s "$OUT/ramdisk-recovery.img" || { echo "ERROR: ramdisk-recovery.img was not produced"; exit 1; }
+          file "$OUT/ramdisk-recovery.img"
+
+      - name: Repack with stock kernel, stock board description and stock header layout
+        if: inputs.mode == 'build'
+        run: |
+          mkdir -p dist
+          sudo chown -R "$(id -u)" "$SRC/out"
+          python3 -I tools/pack_recovery.py \
+            --kernel device/samsung/gtexsltedd/prebuilt/kernel \
+            --ramdisk "$OUT/ramdisk-recovery.img" \
+            --dt device/samsung/gtexsltedd/prebuilt/dt.img \
+            --out dist/recovery.img --seandroid | tee dist/pack-report.txt
+          # Odin package: tar containing recovery.img, plus Odin's appended MD5 line
+          ( cd dist && tar -H ustar -cf twrp-SM-T285YD.tar recovery.img \
+            && cp twrp-SM-T285YD.tar twrp-SM-T285YD.tar.md5 \
+            && md5sum -t twrp-SM-T285YD.tar >> twrp-SM-T285YD.tar.md5 )
+          cp "$SRC/build.log" dist/
+          ( cd dist && sha256sum recovery.img twrp-SM-T285YD.tar.md5 > SHA256SUMS && cat SHA256SUMS )
+
+      - name: Upload results
+        if: always() && inputs.mode == 'build'
+        uses: actions/upload-artifact@v4
+        with:
+          name: twrp-SM-T285YD
+          path: dist/
+          if-no-files-found: warn
 
