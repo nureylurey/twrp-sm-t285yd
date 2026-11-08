@@ -56,9 +56,19 @@ jobs:
           mkdir -p "$SRC" && cd "$SRC"
           start=$(date +%s)
           ~/bin/repo init --depth=1 -u https://github.com/minimal-manifest-twrp/platform_manifest_twrp_omni.git -b twrp-5.1
+          mkdir -p .repo/local_manifests
+          cp "$GITHUB_WORKSPACE/manifests/pin-twrp-3.7.0.xml" .repo/local_manifests/
           ~/bin/repo sync -c --no-tags --no-clone-bundle -j8
           echo "sync took $(( $(date +%s) - start )) s"
           du -sh "$SRC"; df -h /
+
+      - name: Verify TWRP source is pinned to the 3.7.0 release
+        run: |
+          want=9d26b7496e6d8ec12f769979eb70c655f37c3acf
+          got=$(git -C "$SRC/bootable/recovery" rev-parse HEAD)
+          echo "bootable/recovery HEAD: $got"
+          git -C "$SRC/bootable/recovery" log -1 --format='%ad %s' --date=short
+          [ "$got" = "$want" ] || { echo "ERROR: expected $want"; exit 1; }
 
       - name: Add the SM-T285YD device tree
         run: |
@@ -108,4 +118,3 @@ jobs:
           name: twrp-SM-T285YD
           path: dist/
           if-no-files-found: warn
-
