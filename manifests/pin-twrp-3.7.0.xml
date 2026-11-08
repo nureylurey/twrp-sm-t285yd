@@ -1,1 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Pin TWRP's recovery source to the official TWRP 3.7.0 release (2022-10-01).
+  Reason: commit eca1e6d9 (2024-08-28, "Is_Mounted: fix symlink detection") added
+  `nullptr` to partition.cpp, which the Android 5.1 toolchain rejects
+  (build #4: "use of undeclared identifier 'nullptr'").
+  3.7.0 -> current android-9.0 differs only in: Czech translation, 2 lines of theme
+  code, and partition.cpp (symlink detection + f2fs repair; neither used on this device).
+  The workflow verifies the checked-out commit matches this SHA.
+-->
+<manifest>
+  <remove-project name="android_bootable_recovery" />
+  <project path="bootable/recovery" name="android_bootable_recovery" remote="TeamWin"
+           revision="9d26b7496e6d8ec12f769979eb70c655f37c3acf" />
+</manifest>
 
