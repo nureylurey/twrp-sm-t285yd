@@ -83,9 +83,6 @@ TW_MAX_BRIGHTNESS := 255
 TW_DEFAULT_BRIGHTNESS := 162
 
 # SELinux: stock kernel is "always enforce" and uses policy version 26 (Android 5.1),
-# which is why this tree targets the twrp-5.1 branch.
-# Literal path on purpose: "+=" on a new variable defers expansion, so any variable
-# here would be expanded later inside external/sepolicy/Android.mk (build #3 failed
-# because $(LOCAL_PATH) became external/sepolicy at that point).
-BOARD_SEPOLICY_DIRS += device/samsung/gtexsltedd/sepolicy
-BOARD_SEPOLICY_UNION += recovery.te
+# which is why this tree targets the twrp-5.1 branch. No device sepolicy is needed:
+# TWRP's own Android.mk adds bootable/recovery/sepolicy/twrp.te ("permissive recovery;")
+# automatically when PLATFORM_SDK_VERSION is 21 or 22.
