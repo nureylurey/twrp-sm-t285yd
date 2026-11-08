@@ -2,7 +2,9 @@
 # Not for SM-T285 or SM-T285Y. Kernel and board description are the unmodified
 # stock ARD3 images; see HASHES.md.
 
-LOCAL_PATH := device/samsung/gtexsltedd
+# Do not set LOCAL_PATH here: every Android makefile reuses that name, so a
+# deferred reference to it would resolve to whichever makefile ran last.
+DEVICE_PATH := device/samsung/gtexsltedd
 
 # Platform (stock: ro.board.platform=sc8830, ro.product.board=SC9830I)
 TARGET_ARCH := arm
@@ -16,7 +18,7 @@ TARGET_NO_BOOTLOADER := true
 TARGET_NO_RADIOIMAGE := true
 
 # Stock kernel, used as-is (no kernel is compiled)
-TARGET_PREBUILT_KERNEL := $(LOCAL_PATH)/prebuilt/kernel
+TARGET_PREBUILT_KERNEL := $(DEVICE_PATH)/prebuilt/kernel
 BOARD_KERNEL_CMDLINE := console=ttyS1,115200n8
 BOARD_KERNEL_BASE := 0x00000000
 BOARD_KERNEL_PAGESIZE := 2048
@@ -34,7 +36,7 @@ BOARD_HAS_LARGE_FILESYSTEM := true
 BOARD_HAS_NO_MISC_PARTITION := true
 
 # Recovery
-TARGET_RECOVERY_FSTAB := $(LOCAL_PATH)/recovery.fstab
+TARGET_RECOVERY_FSTAB := $(DEVICE_PATH)/recovery.fstab
 RECOVERY_VARIANT := twrp
 RECOVERY_SDCARD_ON_DATA := true
 BOARD_HAS_NO_SELECT_BUTTON := true
@@ -82,5 +84,8 @@ TW_DEFAULT_BRIGHTNESS := 162
 
 # SELinux: stock kernel is "always enforce" and uses policy version 26 (Android 5.1),
 # which is why this tree targets the twrp-5.1 branch.
-BOARD_SEPOLICY_DIRS += $(LOCAL_PATH)/sepolicy
+# Literal path on purpose: "+=" on a new variable defers expansion, so any variable
+# here would be expanded later inside external/sepolicy/Android.mk (build #3 failed
+# because $(LOCAL_PATH) became external/sepolicy at that point).
+BOARD_SEPOLICY_DIRS += device/samsung/gtexsltedd/sepolicy
 BOARD_SEPOLICY_UNION += recovery.te
