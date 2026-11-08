@@ -1,0 +1,3 @@
+# The stock kernel cannot be switched to permissive mode (always-enforce), so the
+# recovery domain itself is marked permissive in policy. Affects recovery mode only.
+permissive recovery;

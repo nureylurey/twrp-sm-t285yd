@@ -1,0 +1,29 @@
+# Partition names under /dev/block/platform/sdio_emmc/by-name/ on the actual SM-T285YD,
+# from `adb shell ls -l /dev/block/platform/*/by-name` (stock ARD3, 2026-11-07).
+CACHE
+FOTA_SIG
+HIDDEN
+KERNEL
+PARAM
+PERSDATA
+PERSISTENT
+RECOVERY
+RESERVED2
+SBOOT
+SBOOT2
+SYSTEM
+efs
+l_fixnv1
+l_fixnv2
+l_gdsp
+l_ldsp
+l_modem
+l_runtimenv1
+l_runtimenv2
+l_warm
+pm_sys
+prodnv
+rsvdfixnv1
+td_runtimenv1
+td_runtimenv2
+userdata

@@ -1,0 +1,28 @@
+# TWRP partition map for SM-T285YD.
+# Derived entry-by-entry from the stock ARD3 recovery's /etc/recovery.fstab
+# (same block devices, mount points and filesystems). Changes from stock:
+#   - TWRP column order (mount point, fs, device, flags)
+#   - backup/display flags added
+#   - /data keeps the stock length=-16384 AND encryptable=footer (from the stock boot
+#     fstab). TWRP only honours length= when formatting if encryptable=footer is set.
+#   - /sdcard (mmcblk1p1) is named /external_sd, as TWRP expects
+# Raw radio/NV partitions are listed for BACKUP ONLY; do not restore them unless
+# recovering from damage to that exact partition.
+
+/boot          emmc  /dev/block/platform/sdio_emmc/by-name/KERNEL    flags=display="Boot";backup=1
+/recovery      emmc  /dev/block/platform/sdio_emmc/by-name/RECOVERY  flags=display="Recovery";backup=1
+/system        ext4  /dev/block/platform/sdio_emmc/by-name/SYSTEM    flags=display="System";backup=1
+/data          ext4  /dev/block/platform/sdio_emmc/by-name/userdata  length=-16384 flags=encryptable=footer
+/cache         ext4  /dev/block/platform/sdio_emmc/by-name/CACHE
+/preload       ext4  /dev/block/platform/sdio_emmc/by-name/HIDDEN    flags=display="Preload";backup=1
+/efs           ext4  /dev/block/platform/sdio_emmc/by-name/efs       flags=display="EFS";backup=1
+/productinfo   ext4  /dev/block/platform/sdio_emmc/by-name/prodnv    flags=display="ProdNV";backup=1
+/persdata      ext4  /dev/block/platform/sdio_emmc/by-name/PERSDATA  flags=display="PersData";backup=1
+/l_modem       emmc  /dev/block/platform/sdio_emmc/by-name/l_modem   flags=display="Modem";backup=1
+/l_ldsp        emmc  /dev/block/platform/sdio_emmc/by-name/l_ldsp    flags=display="LTE DSP";backup=1
+/l_gdsp        emmc  /dev/block/platform/sdio_emmc/by-name/l_gdsp    flags=display="GSM DSP";backup=1
+/l_warm        emmc  /dev/block/platform/sdio_emmc/by-name/l_warm    flags=display="Modem WARM";backup=1
+/nvitem        emmc  /dev/block/platform/sdio_emmc/by-name/l_fixnv2  flags=display="NV items (fixnv2)";backup=1
+/pmsys         emmc  /dev/block/platform/sdio_emmc/by-name/pm_sys    flags=display="PM sys";backup=1
+
+/external_sd   vfat  /dev/block/mmcblk1p1  /dev/block/mmcblk1  flags=display="Micro SD card";storage;wipeingui;removable
